@@ -7,6 +7,11 @@ final _router = GoRouter(
     GoRoute(
       name: 'home',
       path: '/',
+      pageBuilder: (context, state) => const MaterialPage(child: HomePage())
+    ),
+    GoRoute(
+      name: 'signup',
+      path: '/signup',
       pageBuilder: (context, state) => const MaterialPage(child: MyPage())
     )
   ]
@@ -34,6 +39,60 @@ class MyApp extends StatelessWidget {
   }
 }
 
+
+// ---------------------------------------- HOME PAGE --------------------------------------------------------------
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key,});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Container(
+          width: 360,
+          height: 800,
+          decoration: BoxDecoration(
+            border: Border.all(),
+            image: const DecorationImage(
+              image: AssetImage('assets/images/bg_leaf.png'),
+              fit: BoxFit.cover,
+            )
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/images/leaf.png'),
+              Text(
+                'WELCOME',
+                style: headingStyle()
+              ),
+              const SizedBox(height: 100),
+              ElevatedButton(
+                onPressed: () {
+                  debugPrint('Log in button Pressed');
+                },
+                style: mainBtnStyle(),
+                child: const Text('LOG IN'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  GoRouter.of(context).pushNamed('signup');
+                },
+                style: mainBtnStyle(),
+                child: const Text('SIGN UP'),
+              ),
+            ],
+          ),
+        )
+      )
+    );
+  }
+}
+
+// ------------------------------------------------ SIGN UP PAGE ------------------------------------------------------
+
 class MyPage extends StatelessWidget {
   const MyPage({
     super.key,
@@ -42,6 +101,7 @@ class MyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(backgroundColor: colorBg, elevation: 0,),
       body: Center(
         child: Container(
           width: 360,
@@ -69,28 +129,14 @@ class MyPage extends StatelessWidget {
       ),
     );
   }
-
-  TextStyle headingStyle() => const TextStyle(
-    color: colorGreen,
-    fontWeight: FontWeight.w700,
-    fontSize: 25,
-    fontFamily: 'roboto',
-  );
-
-   TextStyle labelStyle() => const TextStyle(
-    color: colorGreen,
-    fontWeight: FontWeight.w400,
-    fontSize: 15,
-    fontFamily: 'public sans',
-  );
 }
 
-const colorGreen = Color.fromRGBO(19, 72, 62, 1);
-const colorBg = Color.fromRGBO(231, 232, 227, 1);
+
+// --------------------------------------------- SIGN UP FORM ---------------------------------------------------
+
 
 class SignUpForm extends StatefulWidget {
   const SignUpForm({super.key});
-
 
   @override
   SignUpFormState createState() => SignUpFormState();
@@ -262,10 +308,34 @@ class SignUpFormState extends State<SignUpForm> {
             return null;
           }
 
+  
+}
+
+
+// --------------------------------------------- CONSTANTS -------------------------------------------------------
+
+
+TextStyle headingStyle() => const TextStyle(
+    color: colorGreen,
+    fontWeight: FontWeight.w700,
+    fontSize: 25,
+    fontFamily: 'roboto',
+  );
+
+   TextStyle labelStyle() => const TextStyle(
+    color: colorGreen,
+    fontWeight: FontWeight.w400,
+    fontSize: 15,
+    fontFamily: 'public sans',
+  );
+
   ButtonStyle mainBtnStyle() => ButtonStyle(
     fixedSize: MaterialStateProperty.all<Size>(const Size(177, 64)),
     backgroundColor: MaterialStateProperty.all<Color>(colorGreen),
     foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
     shape: MaterialStateProperty.all<RoundedRectangleBorder>(RoundedRectangleBorder(borderRadius: BorderRadius.circular(17)))
   );
-}
+
+const colorGreen = Color.fromRGBO(19, 72, 62, 1);
+const colorBg = Color.fromRGBO(231, 232, 227, 1);
+
