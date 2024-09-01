@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final _router = GoRouter(
   routes: [
@@ -13,11 +16,28 @@ final _router = GoRouter(
       name: 'signup',
       path: '/signup',
       pageBuilder: (context, state) => const MaterialPage(child: MyPage())
-    )
+    ),
+    GoRoute(
+      name: 'login',
+      path: '/login',
+      pageBuilder: (context, state) => const MaterialPage(child: LogInPage())
+    ),
+    GoRoute(
+      name: 'profile',
+      path: '/profile',
+      pageBuilder: (context, state) => const MaterialPage(child: ProfilePage())
+    ),
+    GoRoute(
+      name: 'edit-profile',
+      path: '/edit-profile',
+      pageBuilder: (context, state) => const MaterialPage(child: Placeholder())
+    ),
   ]
 );
 
-const baseUrl = "https://c3ec-39-39-65-18.ngrok-free.app/dj-rest-auth/";
+// const baseUrl = "https://c647-39-39-65-18.ngrok-free.app/dj-rest-auth/";
+// const baseUrl = "http://127.0.0.1:8000/dj-rest-auth/";
+const baseUrl = "https://mehaknauman.pythonanywhere.com";
 
 void main() {
   runApp(const MyApp());
@@ -50,11 +70,11 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Container(
-          width: 360,
-          height: 800,
-          decoration: BoxDecoration(
-            border: Border.all(),
-            image: const DecorationImage(
+          width: double.infinity,
+          // height: 800,
+          decoration: const BoxDecoration(
+            // border: Border.all(),
+            image: DecorationImage(
               image: AssetImage('assets/images/bg_leaf.png'),
               fit: BoxFit.cover,
             )
@@ -71,6 +91,7 @@ class HomePage extends StatelessWidget {
               ElevatedButton(
                 onPressed: () {
                   debugPrint('Log in button Pressed');
+                  GoRouter.of(context).pushNamed('login');
                 },
                 style: mainBtnStyle(),
                 child: const Text('LOG IN'),
@@ -85,7 +106,7 @@ class HomePage extends StatelessWidget {
               ),
             ],
           ),
-        )
+        ),
       )
     );
   }
@@ -101,29 +122,32 @@ class MyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(backgroundColor: colorBg, elevation: 0,),
-      body: Center(
-        child: Container(
-          width: 360,
-          height: 800,
-          decoration: BoxDecoration(
-            border: Border.all(),
-            image: const DecorationImage(
-              image: AssetImage('assets/images/bg_leaf.png'),
-              fit: BoxFit.cover,
-            )
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset('assets/images/leaf.png'),
-              Text(
-                'SIGN UP',
-                style: headingStyle()
-              ),
-              const SizedBox(height: 60),
-              const SignUpForm(),
-            ],
+      body: SingleChildScrollView(
+        child: Center(
+          child: Container(
+            // width: 360,
+            // height: 800,
+            decoration: const BoxDecoration(
+              // border: Border.all(),
+              image: DecorationImage(
+                image: AssetImage('assets/images/bg_leaf.png'),
+                fit: BoxFit.cover,
+              )
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/leaf.png'),
+                Text(
+                  'SIGN UP',
+                  style: headingStyle()
+                ),
+                const SizedBox(height: 60),
+                const SignUpForm(),
+              ],
+            ),
           ),
         ),
       ),
@@ -159,7 +183,7 @@ class SignUpFormState extends State<SignUpForm> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(width: 80, child: Text('NAME', style: labelStyle())),
+              SizedBox(width: 80, child: Text('USERNAME', style: labelStyle())),
               const SizedBox(width: 20),
               SizedBox(
                 width: 170,
@@ -240,22 +264,28 @@ class SignUpFormState extends State<SignUpForm> {
               if(_formKey.currentState!.validate()) {
                 _formKey.currentState!.save();
                 debugPrint('Name: $_inputName, Email: $_inputEmail, Password: $_inputPass1, Password2: $_inputPass2');
-                var response = await http.post(Uri.parse("${baseUrl}registration/"), body: {
-                  'username': _inputName,
-                  'email': _inputEmail,
-                  'password1': _inputPass1,
-                  'password2': _inputPass2
-                });
-                if (response.statusCode == 400) {
+                try {
+                   var response = await http.post(Uri.parse("${baseUrl}/dj-rest-auth/registration/"), body: {
+                    'username': _inputName,
+                    'email': _inputEmail,
+                    'password1': _inputPass1,
+                    'password2': _inputPass2
+                  });
+                  if (response.statusCode == 400) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(response.body, style: const TextStyle(color: Colors.red)), backgroundColor: Colors.red.shade100,)
+                    );
+                  } else if (response.statusCode == 204) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Account Created. You can now Log In.', style: TextStyle(color: Colors.green.shade900),), backgroundColor: Colors.green.shade100,)
+                    );
+                  }
+                } catch(e) {
+                  debugPrint("Exception: $e");
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(response.body, style: const TextStyle(color: Colors.red)), backgroundColor: Colors.red.shade100,)
-                  );
-                } else if (response.statusCode == 204) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Account Created. You can now Log In.', style: TextStyle(color: Colors.green.shade900),), backgroundColor: Colors.green.shade100,)
+                    const SnackBar(content: Text('Unable to connect to server',)),
                   );
                 }
-                
               }
             },
             style: mainBtnStyle(),
@@ -307,13 +337,345 @@ class SignUpFormState extends State<SignUpForm> {
             }
             return null;
           }
-
   
 }
+
+// ------------------------------------------------ LOG IN PAGE ------------------------------------------------------
+
+class LogInPage extends StatelessWidget {
+  const LogInPage({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(backgroundColor: colorBg, elevation: 0,),
+      body: SingleChildScrollView(
+        child: Center(
+          child: Container(
+            // width: 360,
+            // height: 800,
+            decoration: const BoxDecoration(
+              // border: Border.all(),
+              image: DecorationImage(
+                image: AssetImage('assets/images/bg_leaf.png'),
+                fit: BoxFit.cover,
+              )
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset('assets/images/leaf.png'),
+                Text(
+                  'LOG IN',
+                  style: headingStyle()
+                ),
+                const SizedBox(height: 60),
+                const LogInForm(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// --------------------------------------------- lOG IN FORM ---------------------------------------------------
+
+
+class LogInForm extends StatefulWidget {
+  const LogInForm({super.key});
+
+  @override
+  LogInFormState createState() => LogInFormState();
+}
+
+class LogInFormState extends State<LogInForm> {
+  String _inputName = '';
+  String _inputPass = '';
+
+  final _loginformKey = GlobalKey<FormState>();
+  
+  @override 
+  Widget build(BuildContext context) {
+    return Form(
+      key: _loginformKey,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(width: 80, child: Text('NAME', style: labelStyle())),
+              const SizedBox(width: 20),
+              SizedBox(
+                width: 170,
+                child: TextFormField(
+                  decoration: const InputDecoration(
+                    hintText: 'Enter your name',
+                  ),
+                  validator: nameValidator,
+                  onSaved: (value) {
+                    _inputName = value!;
+                  }
+                ),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(width: 80, child: Text('PASSWORD', style: labelStyle())),
+              const SizedBox(width: 20),
+              SizedBox(
+                width: 170,
+                child: TextFormField(
+                  decoration: const InputDecoration(
+                    hintText: 'Enter password',
+                  ),
+                  obscureText: true,
+                  validator: passValidator,
+                  onSaved: (value) {
+                    _inputPass = value!;
+                  }
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+          ElevatedButton(
+            onPressed: () async {
+              if(_loginformKey.currentState!.validate()) {
+                _loginformKey.currentState!.save();
+                debugPrint('Name: $_inputName, Password: $_inputPass');
+                try {
+                  var response = await http.post(Uri.parse("${baseUrl}/dj-rest-auth/login/"), body: {
+                  'username': _inputName,
+                  'password': _inputPass,
+                });
+                if (response.statusCode == 400) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(response.body, style: const TextStyle(color: Colors.red)), backgroundColor: Colors.red.shade100,)
+                  );
+                } else if (response.statusCode == 200) {
+                  print("Logging in ${response.body}");
+                  Map<String, dynamic> jsonToken = jsonDecode(response.body);
+                  String token = jsonToken['key'];
+                  debugPrint(token);
+                  storeToken(token);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Logged In.', style: TextStyle(color: Colors.green.shade900),), backgroundColor: Colors.green.shade100,)
+                  );
+                  GoRouter.of(context).pushNamed('profile');
+                }
+                } catch(e) {
+                  debugPrint("Exception: $e");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Unable to connect to server',)),
+                  );
+                }
+              }
+            },
+            style: mainBtnStyle(),
+            child: const Text('LOGIN'),
+          )
+        ],
+      )
+    );
+  }
+
+  String? nameValidator(value) {
+            debugPrint("Validating..");
+            if (value == null || value.isEmpty) {
+              return 'Please Enter your name';
+            }
+            return null;
+          }
+
+  String? passValidator(value) {
+            debugPrint("Validating..");
+            if (value == null || value.isEmpty) {
+              return 'Please Enter your Password';
+            }
+            _inputPass = value;
+            return null;
+  }  
+}
+
+// --------------------------------------------- PROFILE PAGE -------------------------------------------------------------
+
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String _text = '';
+  bool _isLoading = true;
+  bool _hasError = false;
+
+   @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    try {
+      String? result = await getToken();
+      debugPrint('Fetched Token: $result');
+      debugPrint('{"Authorization": "TOKEN $result"}');
+      var response = await http.get(Uri.parse("${baseUrl}/dj-rest-auth/user/"), headers: {
+        'Authorization': 'TOKEN $result',
+        'Accept': 'application/json'
+      });
+      // var response = await http.get(Uri.parse("${baseUrl}test_flutter/"));
+
+      print(response.statusCode);
+      print(response.body);
+      print(response.headers);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _text = response.body;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _hasError = true;
+          _isLoading = false;
+          debugPrint(response.body);
+        });
+      }
+    } catch(e) {
+      setState(() {
+          _hasError = true;
+          _isLoading = false;
+          debugPrint('Exception while fetching data $e');
+        });
+    } 
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator())
+      );
+    }
+    else if (_hasError) {
+      return const Scaffold(
+        body: Center(child: Text('Failed to load Profile'))
+      );
+    }
+    else {
+      return Scaffold(
+      appBar: AppBar(backgroundColor: colorBg, elevation: 0,),
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            const DrawerHeader(child: Text('Menu')),
+            ListTile(
+              title: const Text('LogOut'),
+              onTap: () async {
+                try {
+                  String? result = await getToken();
+                  var response = await http.post(Uri.parse("${baseUrl}/dj-rest-auth/logout/"), headers: {
+                    'Authorization': 'TOKEN $result',
+                  });
+                  if (response.statusCode == 200) {
+                    removeToken();
+                    String? result2 = await getToken();
+                    debugPrint('Proving log out.. $result2');
+
+                    print("Logged out ${response.body}");
+                    GoRouter.of(context).pushNamed('home');
+                  }
+                  else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Error logging out',)),
+                    );
+                    print("Log out error ${response.body}");
+                  }
+                } catch(e) {
+                  debugPrint("Exception: $e");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Unable to connect to server',)),
+                  );
+                }
+              }
+            ),
+            ListTile(
+              title: const Text('Edit Profile'),
+              onTap: () {
+                GoRouter.of(context).pushNamed('edit-profile');
+              }
+            ),
+          ]
+        ),
+      ),
+      body: Center(
+        child: Container(
+          // width: 360,
+          // height: 800,
+          decoration: const BoxDecoration(
+           // border: Border.all(),
+            image: DecorationImage(
+              image: AssetImage('assets/images/bg_leaf.png'),
+              fit: BoxFit.cover,
+            )
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/images/leaf.png'),
+              Text(
+                'PROFILE',
+                style: headingStyle()
+              ),
+              const SizedBox(height: 100),
+              Text(_text, maxLines: 7),
+            ],
+          ),
+        ),
+      ),
+    );
+    }
+  }
+}
+
+
+// -------------------------------------------TOKEN MANAGEMENT ---------------------------------------------------
+
+Future<void> storeToken(String token) async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.setString('login_token', token);
+  debugPrint('Saved Token');
+  String? result = await getToken();
+  debugPrint('Proving.. $result');
+}
+
+Future<String?> getToken() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.getString('login_token');
+}
+
+Future<void> removeToken() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('login_token');
+} 
+
 
 
 // --------------------------------------------- CONSTANTS -------------------------------------------------------
 
+
+// TextStyle labelStyle() => const TextStyle(color: colorGreen, fontWeight: FontWeight.w400, fontFamily: 'public sans', fontSize: 15);
 
 TextStyle headingStyle() => const TextStyle(
     color: colorGreen,
